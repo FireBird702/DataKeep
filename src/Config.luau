@@ -32,6 +32,9 @@ local config = {
 
 	--- the verbosity of the logging
 	logLevel = Enums.LogLevel.Warn,
+
+	--- if promise errors should be included in logs
+	logPromiseTraceback = true,
 }
 
 return config

@@ -446,7 +446,7 @@ function Store.LoadKeep<T, R>(self: Types.store<T, R>, key: string, unreleasedHa
 				end)
 		end)
 		:catch(function(err)
-			return Promise.reject(Log.error(`[DataKeep] Unable to load keep for {id}: {err}`, true))
+			return Promise.reject(Log.error(`[DataKeep] Unable to load keep for {id}.`, err, true))
 		end)
 
 	States.cachedKeepPromises[id] = promise
@@ -560,7 +560,7 @@ function Store.ViewKeep<T, R>(self: Types.store<T, R>, key: string, version: str
 			Log.print(`[DataKeep] Loaded view-only keep {keep:Identify()}`)
 		end)
 		:catch(function(err)
-			return Promise.reject(Log.error(`[DataKeep] Unable to view keep for {id}: {err}`, true))
+			return Promise.reject(Log.error(`[DataKeep] Unable to view keep for {id}.`, err, true))
 		end)
 		:finally(function()
 			States.activeDataStoreJobs -= 1
@@ -605,7 +605,7 @@ function Store.RemoveKeep<T, R>(self: Types.store<T, R>, key: string): PromiseTy
 			Log.print(`[DataKeep] Removed {id}`)
 		end)
 		:catch(function(err)
-			return Promise.reject(Log.error(`[DataKeep] Unable to remove {id}: {err}`, true))
+			return Promise.reject(Log.error(`[DataKeep] Unable to remove {id}.`, err, true))
 		end)
 		:finally(function()
 			States.activeDataStoreJobs -= 1
@@ -748,7 +748,7 @@ function Store.PostGlobalUpdate<T, R>(self: Types.store<T, R>, key: string, upda
 			Log.print(`[DataKeep] Posted global update to {self:Identify()}/{key}`)
 		end)
 		:catch(function(err)
-			return Promise.reject(Log.error(`[DataKeep] Unable to post GlobalUpdate: {err}`, true))
+			return Promise.reject(Log.error(`[DataKeep] Unable to post global update to {self:Identify()}/{key}.`, err, true))
 		end)
 		:finally(function()
 			States.activeDataStoreJobs -= 1

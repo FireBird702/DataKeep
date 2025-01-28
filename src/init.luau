@@ -214,13 +214,14 @@ type config = {
 	maxIssueTime: number?,
 	maxCriticalStateTime: number?,
 	logLevel: string?,
+	logPromiseTraceback: boolean?,
 }
 
 --[=[
 	@function SetConfig
 	@within DataKeep
 
-	@param overwrites { assumeDeadLock: number?, internalKeepCleanupInterval: number?, loadKeepDataStoreFailTimeout: number?, saveInterval: number?, forceLoadMaxAttempts: number?, releaseRetryMaxAttempts: number?, criticalStateThreshold: number?, maxIssueTime: number?, maxCriticalStateTime: number?, logLevel: string? }
+	@param overwrites { assumeDeadLock: number?, internalKeepCleanupInterval: number?, loadKeepDataStoreFailTimeout: number?, saveInterval: number?, forceLoadMaxAttempts: number?, releaseRetryMaxAttempts: number?, criticalStateThreshold: number?, maxIssueTime: number?, maxCriticalStateTime: number?, logLevel: string?, logPromiseTraceback: boolean? }
 
 	Allows to overwrite default config values. Only for experienced developers.
 

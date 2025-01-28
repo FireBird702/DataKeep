@@ -26,29 +26,37 @@ local function emitIssueSignal(message: string)
 	checkCriticalState()
 end
 
-local function debugPrint(message: string, shouldEmitIssueSignal: boolean?)
+local function debugPrint(message: string, err: string?, shouldEmitIssueSignal: boolean?)
 	if shouldEmitIssueSignal then
 		emitIssueSignal(message)
 	end
 
-	local allowedLogLevels = { Enums.LogLevel.All }
+	local logLevels = { Enums.LogLevel.All }
 
-	if table.find(allowedLogLevels, Config.logLevel) then
-		print(message)
+	if table.find(logLevels, Config.logLevel) then
+		if err and Config.logPromiseTraceback then
+			print(message, "\n", err)
+		else
+			print(message)
+		end
 	end
 
 	return message
 end
 
-local function debugWarn(message: string, shouldEmitIssueSignal: boolean?)
+local function debugWarn(message: string, err: string?, shouldEmitIssueSignal: boolean?)
 	if shouldEmitIssueSignal then
 		emitIssueSignal(message)
 	end
 
-	local allowedLogLevels = { Enums.LogLevel.All, Enums.LogLevel.Warn }
+	local logLevels = { Enums.LogLevel.All, Enums.LogLevel.Warn }
 
-	if table.find(allowedLogLevels, Config.logLevel) then
-		warn(message)
+	if table.find(logLevels, Config.logLevel) then
+		if err and Config.logPromiseTraceback then
+			warn(message, "\n", err)
+		else
+			warn(message)
+		end
 	end
 
 	return message
@@ -58,15 +66,19 @@ end
 	Note: this function does not error()
 ]]
 
-local function debugError(message: string, shouldEmitIssueSignal: boolean?)
+local function debugError(message: string, err: string?, shouldEmitIssueSignal: boolean?)
 	if shouldEmitIssueSignal then
 		emitIssueSignal(message)
 	end
 
-	local allowedLogLevels = { Enums.LogLevel.All, Enums.LogLevel.Warn, Enums.LogLevel.Error }
+	local logLevels = { Enums.LogLevel.All, Enums.LogLevel.Warn, Enums.LogLevel.Error }
 
-	if table.find(allowedLogLevels, Config.logLevel) then
-		warn(message)
+	if table.find(logLevels, Config.logLevel) then
+		if err and Config.logPromiseTraceback then
+			warn(message, "\n", err)
+		else
+			warn(message)
+		end
 	end
 
 	return message

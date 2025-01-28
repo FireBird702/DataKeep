@@ -349,7 +349,13 @@ local function save<T, R>(keep: Types.keep<T, R>, isReleasing: boolean): Promise
 
 							latestData.UserIds = keep.UserIds
 						else
-							error(`{keep:Identify()}'s data has not passed validation. {err}`)
+							local errString = `{keep:Identify()}'s data has not passed validation`
+
+							if err then
+								errString ..= `. {err}`
+							end
+
+							error(errString)
 						end
 					end
 
@@ -475,7 +481,7 @@ function Keep.Save<T, R>(self: Types.keep<T, R>): PromiseTypes.TypedPromise<()>
 			Log.print(`[DataKeep] Saved {self:Identify()}`)
 		end)
 		:catch(function(err)
-			return Promise.reject(Log.error(`[DataKeep] Failed to save {self:Identify()}. {err}`, true))
+			return Promise.reject(Log.error(`[DataKeep] Failed to save {self:Identify()}.`, err, true))
 		end)
 		:finally(function()
 			self._lastSaveAttempt = os.clock() -- reset the auto save timer
@@ -537,7 +543,7 @@ function Keep.Release<T, R>(self: Types.keep<T, R>): PromiseTypes.TypedPromise<(
 			Log.print(`[DataKeep] Released {self:Identify()}`)
 		end)
 		:catch(function(err)
-			return Promise.reject(Log.error(`[DataKeep] Failed to release {self:Identify()}. {err}`, true))
+			return Promise.reject(Log.error(`[DataKeep] Failed to release {self:Identify()}.`, err, true))
 		end)
 		:finally(function()
 			self._lastSaveAttempt = os.clock() -- reset the auto save timer
@@ -611,7 +617,13 @@ function Keep.Overwrite<T, R>(self: Types.keep<T, R>, shouldKeepExistingSession:
 
 						latestData.UserIds = self.UserIds
 					else
-						error(`{self:Identify()}'s data has not passed validation. {err}`)
+						local errString = `{self:Identify()}'s data has not passed validation`
+
+						if err then
+							errString ..= `. {err}`
+						end
+
+						error(errString)
 					end
 				end
 
@@ -643,7 +655,7 @@ function Keep.Overwrite<T, R>(self: Types.keep<T, R>, shouldKeepExistingSession:
 			Log.print(`[DataKeep] Overwritten {self:Identify()}`)
 		end)
 		:catch(function(err)
-			return Promise.reject(Log.error(`[DataKeep] Failed to overwrite {self:Identify()}. {err}`, true))
+			return Promise.reject(Log.error(`[DataKeep] Failed to overwrite {self:Identify()}.`, err, true))
 		end)
 		:finally(function()
 			self._lastSaveAttempt = os.clock() -- reset the auto save timer
