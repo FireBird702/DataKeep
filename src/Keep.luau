@@ -157,10 +157,14 @@ function Keep.new<T, R>(structure: Types.keepStruct<T>, dataTemplate: Types.data
 
 	-- prevent unhandled promise rejection if Saving or Releasing has no connections
 	self.Saving:Connect(function(state)
-		state:catch(function() end)
+		state:catch(function(err)
+			return err
+		end)
 	end)
 	self.Releasing:Connect(function(state)
-		state:catch(function() end)
+		state:catch(function(err)
+			return err
+		end)
 	end)
 
 	return setmetatable(self, Keep) :: any
