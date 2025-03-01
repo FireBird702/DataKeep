@@ -57,39 +57,27 @@ Keep.__index = Keep
 ]=]
 
 --[=[
-	@prop Releasing Signal<Promise<()>>
+	@prop Released Signal
 	@within Keep
 
-	Fired when the Keep is releasing (fires before internally released, but during session release).
+	Fired after the Keep is released.
 
 	```lua
-	keep.Releasing:Connect(function(state)
-		print(`Releasing {keep:Identify()}`)
-
-		state:andThen(function()
-			print(`Released {keep:Identify()}`)
-		end):catch(function()
-			print(`Failed to release {keep:Identify()}`)
-		end)
+	keep.Released:Once(function()
+		print(`Released {keep:Identify()}`)
 	end)
 	```
 ]=]
 
 --[=[
-	@prop Saving Signal<Promise<()>>
+	@prop Saved Signal
 	@within Keep
 
-	Fired when the Keep is saving, resolves on complete.
+	Fired after the Keep is saved.
 
 	```lua
-	keep.Saving:Connect(function(state)
-		print(`Saving {keep:Identify()}`)
-
-		state:andThen(function()
-			print(`Saved {keep:Identify()}`)
-		end):catch(function()
-			print(`Failed to save {keep:Identify()}`)
-		end)
+	keep.Saved:Connect(function()
+		print(`Saved {keep:Identify()}`)
 	end)
 	```
 ]=]
@@ -130,7 +118,7 @@ function Keep.new<T, R>(structure: Types.keepStruct<T>, dataTemplate: Types.data
 
 		_destroyed = false,
 
-		Releasing = Signal.new(),
+		Released = Signal.new(),
 		_releasing = false,
 		_released = false,
 
@@ -146,7 +134,7 @@ function Keep.new<T, R>(structure: Types.keepStruct<T>, dataTemplate: Types.data
 		_keyInfo = {},
 
 		_lastSaveAttempt = os.clock(),
-		Saving = Signal.new(),
+		Saved = Signal.new(),
 
 		_store = nil, -- the store class that created the keep
 		_datastore = nil,
@@ -154,18 +142,6 @@ function Keep.new<T, R>(structure: Types.keepStruct<T>, dataTemplate: Types.data
 
 		_dataTemplate = dataTemplate,
 	}
-
-	-- prevent unhandled promise rejection if Saving and / or Releasing has no connections
-	self.Saving:Connect(function(state)
-		state:catch(function(err)
-			return err
-		end)
-	end)
-	self.Releasing:Connect(function(state)
-		state:catch(function(err)
-			return err
-		end)
-	end)
 
 	return setmetatable(self, Keep) :: any
 end
@@ -391,6 +367,8 @@ local function save<T, R>(keep: Types.keep<T, R>, isReleasing: boolean): Promise
 			keep._keyInfo = datastoreKeyInfo
 		end
 
+		keep.Saved:Fire()
+
 		if isOverwritten then
 			keep.Overwritten:Fire(isReleasingOnOverwrite)
 		end
@@ -414,11 +392,10 @@ function Keep._release<T, R>(self: Types.keep<T, R>, updater: PromiseTypes.Typed
 
 	self._releasing = true
 
-	self.Releasing:Fire(Promise.try(function() -- unlocked, but not removed internally
-		return updater:expect()
-	end))
-
 	updater
+		:tap(function()
+			self.Released:Fire()
+		end)
 		:catch(function(err) -- prevents unhandled promise rejection
 			return err
 		end)
@@ -487,10 +464,6 @@ function Keep.Save<T, R>(self: Types.keep<T, R>): PromiseTypes.TypedPromise<()>
 			States.activeDataStoreJobs -= 1
 		end)
 
-	self.Saving:Fire(Promise.try(function()
-		return savingState:expect()
-	end))
-
 	if savingState:getStatus() == Promise.Status.Started then
 		saveCache[self:Identify()] = savingState
 	end
@@ -547,10 +520,6 @@ function Keep.Release<T, R>(self: Types.keep<T, R>): PromiseTypes.TypedPromise<(
 			self._lastSaveAttempt = os.clock() -- reset the auto save timer
 			States.activeDataStoreJobs -= 1
 		end)
-
-	self.Saving:Fire(Promise.try(function()
-		return updater:expect()
-	end))
 
 	return updater
 end
@@ -676,8 +645,8 @@ function Keep.Destroy<T, R>(self: Types.keep<T, R>)
 
 	self._destroyed = true
 
-	self.Releasing:Destroy()
-	self.Saving:Destroy()
+	self.Released:Destroy()
+	self.Saved:Destroy()
 	self.Overwritten:Destroy()
 	self.OnGlobalUpdate:Destroy()
 end
