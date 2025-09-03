@@ -72,6 +72,25 @@ Store.__index = Store
 	```
 ]=]
 
+--[=[
+	@prop _globalStateProcessor (globalUpdateData: GlobalUpdateData, lock: () -> (), remove: () -> ()) -> ()
+	@within Store
+
+	Define how to process global updates, by default just locks the global update (this is only ran if the Keep is online).
+
+	The function reveals the lock and remove global update function through the parameters.
+
+	:::warning
+	**This function should not be used directly. It is used internally when processing global updates.**
+
+	Updates **must** be locked eventually in order for [.OnGlobalUpdate](#OnGlobalUpdate) to get fired.
+	:::
+
+	:::danger
+	The lock and remove function revealed here are **NOT** the same as the ones in the Keep class, they are only for this function.
+	:::
+]=]
+
 --> Private Functions
 
 local function createMockStore<T, R>(storeInfo: Types.storeInfo, dataTemplate: Types.dataTemplate<T>, wrapper: R): Types.mockStore<T, R> -- complete mirror of real stores, minus mock related data as we are in a mock store
@@ -115,6 +134,8 @@ function Store.new<T, R>(storeInfo: Types.storeInfo, dataTemplate: Types.dataTem
 		_isMockEnabled = if States.isUseMockStore then true else false, -- studio only/datastores not available
 
 		_wrapper = wrapper,
+
+		_globalStateProcessor = GlobalUpdates._globalStateProcessor,
 
 		validate = function()
 			return true
@@ -237,6 +258,8 @@ function Store.LoadKeep<T, R>(self: Types.store<T, R>, key: string, unreleasedHa
 			local shouldStealSessionOnForceLoad = false -- used only with ForceLoad
 			local shouldStealSession = false -- unreleasedHandler() == Enums.LoadMethod.Steal
 
+			local processGlobalUpdatesResult
+
 			return Promise.try(function(): { loadedData: Types.keepStruct<T>, datastoreKeyInfo: DataStoreKeyInfo }?
 				local forceLoadAttempts = 0
 				local forceLoadWaitTime = 1
@@ -313,6 +336,12 @@ function Store.LoadKeep<T, R>(self: Types.store<T, R>, key: string, unreleasedHa
 
 										latest.data.Data = processedData
 									end
+
+									-- process global updates during loading process
+									processGlobalUpdatesResult = GlobalUpdates._processGlobalUpdates(latest.data, {
+										pendingGlobalLocks = {},
+										pendingGlobalLockRemoves = {},
+									}, self._globalStateProcessor, false)
 								end
 
 								return false
@@ -419,6 +448,9 @@ function Store.LoadKeep<T, R>(self: Types.store<T, R>, key: string, unreleasedHa
 					local datastoreKeyInfo = data.datastoreKeyInfo
 
 					local keepClass = Keep.new(loadedData, datastoreKeyInfo, self._dataTemplate)
+
+					keepClass._pendingGlobalLocks = processGlobalUpdatesResult.actions.pendingGlobalLocks
+					keepClass._pendingGlobalLockRemoves = processGlobalUpdatesResult.actions.pendingGlobalLockRemoves
 
 					if datastoreKeyInfo then
 						keepClass._keyInfo = datastoreKeyInfo
@@ -723,7 +755,7 @@ end
 	:::
 ]=]
 
-function Store.PostGlobalUpdate<T, R>(self: Types.store<T, R>, key: string, updateHandler: (globalUpdates: Types.globalUpdatesClass) -> ()): PromiseTypes.TypedPromise<any, DataStoreKeyInfo>
+function Store.PostGlobalUpdate<T, R>(self: Types.store<T, R>, key: string, updateHandler: (globalUpdates: Types.globalUpdatesClass) -> ()): PromiseTypes.TypedPromise<Types.keepStruct<T>, DataStoreKeyInfo>
 	if States.isServiceDone then
 		return Promise.reject(Message.new("Server is closing, unable to post global update"))
 	end
