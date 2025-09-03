@@ -999,7 +999,7 @@ end
 	:::
 ]=]
 
-function Keep.SetVersion<T, R>(self: Types.keep<T, R>, version: string, migrateProcessor: ((versionKeep: Types.keep<T, R>) -> Types.keep<T, R>)?): PromiseTypes.TypedPromise<Types.keep<T, R>>
+function Keep.SetVersion<T, R>(self: Types.keep<T, R>, version: string, migrateProcessor: ((versionKeep: Types.viewOnlyKeep<T, R>) -> Types.viewOnlyKeep<T, R>)?): PromiseTypes.TypedPromise<Types.setVersionReturn<T>>
 	if migrateProcessor ~= nil and typeof(migrateProcessor) ~= "function" then
 		return Promise.reject(Message.new(`migrateProcessor must be a function`))
 	end
@@ -1010,7 +1010,7 @@ function Keep.SetVersion<T, R>(self: Types.keep<T, R>, version: string, migrateP
 		end
 	end
 
-	local processor = migrateProcessor :: (versionKeep: Types.keep<T, R>) -> Types.keep<T, R>
+	local processor = migrateProcessor :: (versionKeep: Types.viewOnlyKeep<T, R>) -> Types.viewOnlyKeep<T, R>
 
 	return Promise.new(function(resolve)
 		if not self:IsActive() then

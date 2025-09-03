@@ -175,6 +175,13 @@ export type keepStruct<T> = {
 	GlobalUpdates: globalUpdates,
 }
 
+export type setVersionReturn<T> = {
+	Data: data<T>,
+	Metadata: metadata,
+	GlobalUpdates: globalUpdates,
+	UserIds: userIds,
+}
+
 export type keepBase<T, R> = keepStruct<T> & {
 	_store: store<T, R>,
 	_datastore: DataStore,
@@ -204,7 +211,7 @@ export type keepBase<T, R> = keepStruct<T> & {
 	RemoveUserId: (self: keepBase<T, R>, userId: number) -> (),
 
 	GetVersions: (self: keepBase<T, R>, minDate: number?, maxDate: number?) -> PromiseTypes.TypedPromise<iterator>,
-	SetVersion: (self: keepBase<T, R>, version: string, migrateProcessor: ((versionKeep: keepBase<T, R>) -> keepBase<T, R>)?) -> PromiseTypes.TypedPromise<keepBase<T, R>>,
+	SetVersion: (self: keepBase<T, R>, version: string, migrateProcessor: ((versionKeep: viewOnlyKeep<T, R>) -> viewOnlyKeep<T, R>)?) -> PromiseTypes.TypedPromise<setVersionReturn<T>>,
 
 	GetActiveGlobalUpdates: (self: keepBase<T, R>) -> { globalUpdate },
 	GetLockedGlobalUpdates: (self: keepBase<T, R>) -> { globalUpdate },
