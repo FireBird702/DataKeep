@@ -105,7 +105,7 @@ type storeBase<T, R> = {
 
 	_wrapper: wrapper<R>,
 
-	_globalStateProcessor: globalStateProcessor,
+	_globalUpdateProcessor: globalUpdateProcessor,
 
 	validate: (data: data<T>) -> (boolean, string?),
 
@@ -295,6 +295,6 @@ export type globalUpdatesClass<T = any> = {
 	GetActiveUpdates: (self: globalUpdatesClass<T>) -> { globalUpdate<T> },
 }
 
-export type globalStateProcessor = (globalUpdateData: globalUpdateData, lock: () -> (), remove: () -> ()) -> ()
+export type globalUpdateProcessor = (globalUpdateData: globalUpdateData, lock: () -> (), remove: () -> ()) -> ()
 
 return nil

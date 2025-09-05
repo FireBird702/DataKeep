@@ -206,7 +206,7 @@ local function save<T, R>(keep: Types.keep<T, R>, isReleasing: boolean): Promise
 						local result = GlobalUpdates._processGlobalUpdates(latest.data, {
 							pendingGlobalLocks = keep._pendingGlobalLocks,
 							pendingGlobalLockRemoves = keep._pendingGlobalLockRemoves,
-						}, keep._store._globalStateProcessor, isReleasing)
+						}, keep._store._globalUpdateProcessor, isReleasing)
 
 						keep.GlobalUpdates = result.latestData.GlobalUpdates
 

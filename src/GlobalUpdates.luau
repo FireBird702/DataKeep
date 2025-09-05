@@ -189,13 +189,35 @@ function GlobalUpdates.GetActiveUpdates<T>(self: Types.globalUpdatesClass<T>): {
 	return updates
 end
 
-function GlobalUpdates._globalStateProcessor(_globalUpdateData: Types.globalUpdateData, lock: () -> (), _remove: () -> ())
+--[[
+	Define how to process active global update, by default just locks the global update (this is only ran if the Keep is online during saving).
+
+	The function reveals the lock and remove global update function through the parameters.
+
+	:::info
+	This function will not run for global updates that are already locked. Use [:GetLockedGlobalUpdates()](Keep#GetLockedGlobalUpdates)
+
+	Instead of changing this function, use global updates example
+	:::
+
+	:::warning
+	**This function should not be used directly. It is used internally when processing global updates.**
+
+	Updates **must** be locked eventually in order for [.OnGlobalUpdate](Keep#OnGlobalUpdate) to get fired.
+	:::
+
+	:::danger
+	The lock and remove function revealed here are **NOT** the same as the ones in the Keep class, they are only for this function.
+	:::
+]]
+
+function GlobalUpdates._globalUpdateProcessor(_globalUpdateData: Types.globalUpdateData, lock: () -> (), _remove: () -> ())
 	-- by default just locks the global update
 
 	lock()
 end
 
-function GlobalUpdates._processGlobalUpdates<T, R>(latestData: Types.keepStruct<T>, pendingActions: { pendingGlobalLocks: { number }, pendingGlobalLockRemoves: { number } }, globalStateProcessor: Types.globalStateProcessor, isReleasing: boolean)
+function GlobalUpdates._processGlobalUpdates<T>(latestData: Types.keepStruct<T>, pendingActions: { pendingGlobalLocks: { number }, pendingGlobalLockRemoves: { number } }, globalUpdateProcessor: Types.globalUpdateProcessor, isReleasing: boolean)
 	-- this handles full profiles and if there are only global updates (globals posted with never loaded)
 
 	local finalGlobals = latestData.GlobalUpdates -- the final global updates to save
@@ -243,7 +265,7 @@ function GlobalUpdates._processGlobalUpdates<T, R>(latestData: Types.keepStruct<
 				continue
 			end
 
-			globalStateProcessor(globalUpdates[i].Data, function()
+			globalUpdateProcessor(globalUpdates[i].Data, function()
 				table.insert(processUpdates, function()
 					lockGlobalUpdate(i)
 				end)
