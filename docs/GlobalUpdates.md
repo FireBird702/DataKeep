@@ -9,6 +9,7 @@ The following example shows how you would handle global updates:
 ```lua title="DataTemplate.luau"
 local dataTemplate = {
 	Coins = 0,
+	Gems = 0,
 }
 
 export type template = typeof(dataTemplate)
@@ -25,7 +26,10 @@ export type globalUpdateData = {
 	Gems: number,
 }
 
-return nil
+return {
+	Coins = "Coins",
+	Gems = "Gems",
+}
 ```
 
 ```lua title="Main.luau"
@@ -64,17 +68,21 @@ local function onPlayerAdded(player: Player)
 		end
 
 		local function processGlobalUpdate(globalUpdateData: GlobalUpdateDataType.globalUpdateData, globalUpdateId: number)
-			if not (globalUpdateData.Type == "Coins") then
+			if not GlobalUpdateDataType[globalUpdateData.Type] then
 				return
 			end
 
 			keep:ClearLockedUpdate(globalUpdateId):andThen(function()
 				-- clear locked update first and then apply changes
 
-				keep.Data.Coins += globalUpdateData.Coins
+				if globalUpdateData.Type == GlobalUpdateDataType.Coins then
+					keep.Data.Coins += globalUpdateData.Coins
+				elseif globalUpdateData.Type == GlobalUpdateDataType.Gems then
+					keep.Data.Gems += globalUpdateData.Gems
+				end
 			end):catch(function(err)
-				print(`Failed to clear locked update ({globalUpdateId}): {err}`)
-			end):await()
+				print(`Failed to clear locked update (id: {globalUpdateId}) in {player.Name}'s Keep: {err}`)
+			end)
 		end
 
 		-- process already locked global updates
@@ -126,7 +134,7 @@ local coinsToAdd = 100
 
 store:PostGlobalUpdate(`Player_[UserId]`, function(globalUpdates)
 	for _, globalUpdate: DataKeep.GlobalUpdate<GlobalUpdateDataType.globalUpdateData> in globalUpdates:GetActiveUpdates() do
-		if not (globalUpdate.Data.Type == "Coins") then
+		if not (globalUpdate.Data.Type == GlobalUpdateDataType.Coins) then
 			continue
 		end
 
@@ -137,7 +145,7 @@ store:PostGlobalUpdate(`Player_[UserId]`, function(globalUpdates)
 
 	-- active update not found, add a new one
 	globalUpdates:AddGlobalUpdate({
-		Type = "Coins",
+		Type = GlobalUpdateDataType.Coins,
 		Coins = coinsToAdd,
 	}):expect()
 end)
