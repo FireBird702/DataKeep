@@ -116,6 +116,8 @@ function Store.new<T, R>(storeInfo: Types.storeInfo, dataTemplate: Types.dataTem
 
 		_wrapper = wrapper,
 
+		_globalUpdateProcessor = GlobalUpdates._globalUpdateProcessor,
+
 		validate = function()
 			return true
 		end,
@@ -237,6 +239,8 @@ function Store.LoadKeep<T, R>(self: Types.store<T, R>, key: string, unreleasedHa
 			local shouldStealSessionOnForceLoad = false -- used only with ForceLoad
 			local shouldStealSession = false -- unreleasedHandler() == Enums.LoadMethod.Steal
 
+			local processGlobalUpdatesResult
+
 			return Promise.try(function(): { loadedData: Types.keepStruct<T>, datastoreKeyInfo: DataStoreKeyInfo }?
 				local forceLoadAttempts = 0
 				local forceLoadWaitTime = 1
@@ -313,6 +317,12 @@ function Store.LoadKeep<T, R>(self: Types.store<T, R>, key: string, unreleasedHa
 
 										latest.data.Data = processedData
 									end
+
+									-- process global updates during loading process
+									processGlobalUpdatesResult = GlobalUpdates._processGlobalUpdates(latest.data, {
+										pendingGlobalLocks = {},
+										pendingGlobalLockRemoves = {},
+									}, self._globalUpdateProcessor, false)
 								end
 
 								return false
@@ -419,6 +429,9 @@ function Store.LoadKeep<T, R>(self: Types.store<T, R>, key: string, unreleasedHa
 					local datastoreKeyInfo = data.datastoreKeyInfo
 
 					local keepClass = Keep.new(loadedData, datastoreKeyInfo, self._dataTemplate)
+
+					keepClass._pendingGlobalLocks = processGlobalUpdatesResult.actions.pendingGlobalLocks
+					keepClass._pendingGlobalLockRemoves = processGlobalUpdatesResult.actions.pendingGlobalLockRemoves
 
 					if datastoreKeyInfo then
 						keepClass._keyInfo = datastoreKeyInfo
@@ -723,7 +736,7 @@ end
 	:::
 ]=]
 
-function Store.PostGlobalUpdate<T, R>(self: Types.store<T, R>, key: string, updateHandler: (globalUpdates: Types.globalUpdatesClass) -> ()): PromiseTypes.TypedPromise<any, DataStoreKeyInfo>
+function Store.PostGlobalUpdate<T, R>(self: Types.store<T, R>, key: string, updateHandler: (globalUpdates: Types.globalUpdatesClass) -> ()): PromiseTypes.TypedPromise<Types.keepStruct<T>, DataStoreKeyInfo>
 	if States.isServiceDone then
 		return Promise.reject(Message.new("Server is closing, unable to post global update"))
 	end

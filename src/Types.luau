@@ -105,6 +105,8 @@ type storeBase<T, R> = {
 
 	_wrapper: wrapper<R>,
 
+	_globalUpdateProcessor: globalUpdateProcessor,
+
 	validate: (data: data<T>) -> (boolean, string?),
 
 	Identify: (self: storeBase<T, R>) -> string,
@@ -116,7 +118,7 @@ type storeBase<T, R> = {
 	PreLoad: (self: storeBase<T, R>, callback: (data: data<T>) -> data<T>) -> (),
 	PreSave: (self: storeBase<T, R>, callback: (data: data<T>) -> data<T>) -> (),
 
-	PostGlobalUpdate: (self: storeBase<T, R>, key: string, updateHandler: (globalUpdates: globalUpdatesClass) -> ()) -> PromiseTypes.TypedPromise<any, DataStoreKeyInfo>,
+	PostGlobalUpdate: (self: storeBase<T, R>, key: string, updateHandler: (globalUpdates: globalUpdatesClass) -> ()) -> PromiseTypes.TypedPromise<keepStruct<T>, DataStoreKeyInfo>,
 }
 
 --[=[
@@ -175,6 +177,13 @@ export type keepStruct<T> = {
 	GlobalUpdates: globalUpdates,
 }
 
+export type setVersionReturn<T> = {
+	Data: data<T>,
+	Metadata: metadata,
+	GlobalUpdates: globalUpdates,
+	UserIds: userIds,
+}
+
 export type keepBase<T, R> = keepStruct<T> & {
 	_store: store<T, R>,
 	_datastore: DataStore,
@@ -204,7 +213,7 @@ export type keepBase<T, R> = keepStruct<T> & {
 	RemoveUserId: (self: keepBase<T, R>, userId: number) -> (),
 
 	GetVersions: (self: keepBase<T, R>, minDate: number?, maxDate: number?) -> PromiseTypes.TypedPromise<iterator>,
-	SetVersion: (self: keepBase<T, R>, version: string, migrateProcessor: ((versionKeep: keepBase<T, R>) -> keepBase<T, R>)?) -> PromiseTypes.TypedPromise<keepBase<T, R>>,
+	SetVersion: (self: keepBase<T, R>, version: string, migrateProcessor: ((versionKeep: viewOnlyKeep<T, R>) -> viewOnlyKeep<T, R>)?) -> PromiseTypes.TypedPromise<setVersionReturn<T>>,
 
 	GetActiveGlobalUpdates: (self: keepBase<T, R>) -> { globalUpdate },
 	GetLockedGlobalUpdates: (self: keepBase<T, R>) -> { globalUpdate },
@@ -218,8 +227,8 @@ export type keepBase<T, R> = keepStruct<T> & {
 export type keep<T, R = {}> = keepBase<T, R> & {
 	_lastSaveAttempt: number,
 
-	_pending_global_locks: { number },
-	_pending_global_lock_removes: { number },
+	_pendingGlobalLocks: { number },
+	_pendingGlobalLockRemoves: { number },
 
 	Released: Signal.ScriptSignal<>,
 	ReleaseFailed: Signal.ScriptSignal<>,
@@ -227,8 +236,6 @@ export type keep<T, R = {}> = keepBase<T, R> & {
 	SaveFailed: Signal.ScriptSignal<>,
 	Overwritten: Signal.ScriptSignal<boolean>,
 	OnGlobalUpdate: Signal.ScriptSignal<globalUpdateData, number>,
-
-	GlobalStateProcessor: (globalUpdateData: globalUpdateData, lock: () -> (), remove: () -> ()) -> (),
 
 	Save: (self: keep<T, R>) -> PromiseTypes.TypedPromise<()>,
 	Release: (self: keep<T, R>) -> PromiseTypes.TypedPromise<()>,
@@ -251,40 +258,43 @@ export type iterator = {
 }
 
 --[=[
-	@type GlobalUpdateData { [any]: any }
+	@type GlobalUpdateData any
 	@within GlobalUpdates
 ]=]
 
-export type globalUpdateData = { [any]: any }
+export type globalUpdateData<T = any> = T
 
 --[=[
-	@type GlobalUpdate { Id: number, Locked: boolean, Data: GlobalUpdateData }
+	@type GlobalUpdate { Id: number, Data: GlobalUpdateData }
 	@within GlobalUpdates
 ]=]
 
-export type globalUpdate = {
+export type globalUpdate<T = any> = {
 	Id: number,
-	Locked: boolean,
-	Data: globalUpdateData,
+	Data: globalUpdateData<T>,
 }
 
 --[=[
-	@type GlobalUpdates { Id: number, Updates: { GlobalUpdate } }
+	@type GlobalUpdates { Id: number, Updates: { GlobalUpdate & { Locked: boolean } } }
 	@within GlobalUpdates
 
 	```Id``` is the most recent update index.
 ]=]
 
-export type globalUpdates = {
+export type globalUpdates<T = any> = {
 	Id: number,
-	Updates: { globalUpdate },
+	Updates: { globalUpdate<T> & { Locked: boolean } },
 }
 
-export type globalUpdatesClass = {
-	AddGlobalUpdate: (self: globalUpdatesClass, globalUpdateData: globalUpdateData) -> PromiseTypes.TypedPromise<number>,
-	ChangeActiveUpdate: (self: globalUpdatesClass, updateId: number, globalUpdateData: globalUpdateData) -> PromiseTypes.TypedPromise<()>,
-	RemoveActiveUpdate: (self: globalUpdatesClass, updateId: number) -> PromiseTypes.TypedPromise<()>,
-	GetActiveUpdates: (self: globalUpdatesClass) -> { globalUpdate },
+export type globalUpdatesClass<T = any> = {
+	_updates: globalUpdates<T>,
+
+	AddGlobalUpdate: (self: globalUpdatesClass<T>, globalUpdateData: globalUpdateData<T>) -> PromiseTypes.TypedPromise<number>,
+	ChangeActiveUpdate: (self: globalUpdatesClass<T>, updateId: number, globalUpdateData: globalUpdateData<T>) -> PromiseTypes.TypedPromise<()>,
+	RemoveActiveUpdate: (self: globalUpdatesClass<T>, updateId: number) -> PromiseTypes.TypedPromise<()>,
+	GetActiveUpdates: (self: globalUpdatesClass<T>) -> { globalUpdate<T> },
 }
+
+export type globalUpdateProcessor = (globalUpdateData: globalUpdateData, lock: () -> (), remove: () -> ()) -> ()
 
 return nil

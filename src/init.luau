@@ -44,6 +44,7 @@ export type Store<T, R = {}> = Types.store<T, R>
 export type MockStore<T, R = {}> = Types.mockStore<T, R>
 export type Keep<T, R = {}> = Types.keep<T, R>
 export type ViewKeep<T, R = {}> = Types.viewOnlyKeep<T, R>
+export type GlobalUpdate<T = any> = Types.globalUpdate<T>
 
 export type Promise = PromiseTypes.Promise
 export type TypedPromise<T...> = PromiseTypes.TypedPromise<T...>

@@ -1,5 +1,16 @@
 # DataKeep
 
+## [7.0.0](https://github.com/noahrepublic/DataKeep/releases/tag/v7.0.0): 14/09/2025
+
+- Global updates should now be processed during loading process
+- Added **Global Updates** section to docs
+- Fixed `keep:SetVersion()` types
+
+### Breaking Changes
+
+- `keep.GlobalStateProcessor()` -> `store._globalUpdateProcessor()`
+- `store._globalUpdateProcessor()` should not be used to process global updates, see **Global Updates** example
+
 ## [version 6.0.0](https://github.com/noahrepublic/DataKeep/releases/tag/v6.0.0): 19/05/2025
 
 - Fixed auto save ignoring timer after failed save attempt
