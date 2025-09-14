@@ -1,6 +1,6 @@
 # DataKeep
 
-## [Unreleased](https://github.com/noahrepublic/DataKeep/compare/v6.0.0...HEAD)
+## [7.0.0](https://github.com/noahrepublic/DataKeep/releases/tag/v7.0.0): 14/09/2025
 
 - Global updates should now be processed during loading process
 - Added **Global Updates** section to docs
